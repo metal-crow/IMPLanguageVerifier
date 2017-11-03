@@ -38,6 +38,10 @@ object Main {
       generateVisualGraph(controlflow);
     }
     
+    def parseTextInput(filename: String) : Seq = {
+      //TODO
+    }
+    
     def generateVisualGraph(controlflow: Array[Tuple3[Int,Int,String]]) = {
       var edges_graph = Seq[EdgeStatement]();
       for(edge <- controlflow){
