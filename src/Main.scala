@@ -25,16 +25,35 @@ case class Sub(a: IExp, b: IExp) extends IExp
 object Main {
     
     def main(args: Array[String]): Unit = {
-      generateControlFlow(Skip(), nextNodeId(), nextNodeId());
+      val prog = Sequence(Sequence(
+          Assign(Id("XINT"), IdealInt(15)),
+          Assign(Id("YINT"), IdealInt(0))),
+          WhileLoop(LessEqual(IdealInt(1), Id("XINT")), 
+              Sequence(
+                Conditional(Equal(Id("XINT"), IdealInt(5)), Assign(Id("YINT"), IdealInt(1)), Skip()),
+                Assign(Id("XINT"), Sub(Id("XINT"), IdealInt(1)))
+              )
+          ));
+      val controlflow = generateControlFlow(prog, nextNodeId(), nextNodeId());
+      generateVisualGraph(controlflow);
+    }
+    
+    def generateVisualGraph(controlflow: Array[Tuple3[Int,Int,String]]) = {
+      var edges_graph = Seq[EdgeStatement]();
+      for(edge <- controlflow){
+        edges_graph = edges_graph :+ EdgeStatement(edge._1.toString, edge._2.toString, Seq[Attribute]("label" := "\""+edge._3+"\"")); 
+      }
+      val graph = createGraph("tmp", edges_graph);
+      saveGraph("tmp2.dot", "tmp2.png", graph);
     }
     
     //return array of tuples representing edges, and the label for each edge
     def generateControlFlow(start_stmt: Stmt, startnode: Int, endnode: Int) : Array[Tuple3[Int,Int,String]] = {
       start_stmt match{
         case _:Skip =>
-          return Array();
+          return Array((startnode, endnode, ""));
         case as:Assign =>
-          return Array((startnode, endnode, as.id+":="+as.from));
+          return Array((startnode, endnode, as.id.name+":="+resolveIExp(as.from)));
         case se:Sequence =>
           val middle = nextNodeId();
           val ary = generateControlFlow(se.left, startnode, middle);
@@ -75,8 +94,8 @@ object Main {
       in match{
         case ii: IdealInt => return ii.value.toString;
         case id: Id => return id.name;
-        case add: Add => return"("+resolveIExp(add.a)+"+"+resolveIExp(add.b)+")";
-        case sub: Sub => return"("+resolveIExp(sub.a)+"-"+resolveIExp(sub.b)+")";
+        case add: Add => return "("+resolveIExp(add.a)+"+"+resolveIExp(add.b)+")";
+        case sub: Sub => return "("+resolveIExp(sub.a)+"-"+resolveIExp(sub.b)+")";
       }
     }
     

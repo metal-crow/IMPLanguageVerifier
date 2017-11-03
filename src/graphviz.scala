@@ -39,7 +39,7 @@ package object graphviz {
     }
   }
 
-  def createGraph(id: String, edges: EdgeStatement*) = {
+  def createGraph(id: String, edges: Seq[EdgeStatement]) = {
     Graph(id, edges)
   }
 
