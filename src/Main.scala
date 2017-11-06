@@ -33,7 +33,10 @@ object Main {
                 Assign(Id("XINT"), Sub(Id("XINT"), IdealInt(1)))
               )
           ));
-      val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
-      generateImpControlFlow.generateVisualGraph(controlflow);
+      val parsed_prog = parseImpText.parseTextInput("input.imp");
+      println(parsed_prog);
+      
+      //val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
+      //generateImpControlFlow.generateVisualGraph(controlflow);
     }
 }
