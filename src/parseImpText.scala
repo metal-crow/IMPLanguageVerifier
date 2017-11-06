@@ -82,7 +82,16 @@ object parseImpText {
       }
       
       //check not
-      
+      val not_i = bexp.indexOf("!");
+      if(not_i>=0){
+        val inner_str = bexp.substring(not_i);
+        val inner = parseIExp(inner_str);
+        if(inner.isEmpty){
+          println("Invalid not \""+inner_str+"\"");
+          return None;
+        }
+        return Some(Not(inner.get));
+      }      
             
       println("Unable to parse BExp \""+bexp+"\"");
       return None;
