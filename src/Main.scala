@@ -11,9 +11,9 @@ case class Assert(check: BExp) extends Stmt
 sealed trait BExp
 case class LessEqual(a: IExp, b: IExp) extends BExp
 case class Equal(a: IExp, b: IExp) extends BExp
-case class Not(a: IExp) extends BExp
-case class And(a: IExp, b: IExp) extends BExp
-case class Or(a: IExp, b: IExp) extends BExp
+case class Not(a: BExp) extends BExp
+case class And(a: BExp, b: BExp) extends BExp
+case class Or(a: BExp, b: BExp) extends BExp
 
 sealed trait IExp
 case class IdealInt(value: BigInt) extends IExp
