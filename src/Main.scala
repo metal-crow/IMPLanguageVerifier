@@ -36,7 +36,7 @@ object Main {
       val parsed_prog = parseImpText.parseTextInput("input.imp");
       println(parsed_prog);
       
-      //val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
-      //generateImpControlFlow.generateVisualGraph(controlflow);
+      val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
+      generateImpControlFlow.generateVisualGraph(controlflow);
     }
 }
