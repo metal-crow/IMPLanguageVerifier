@@ -1,27 +1,90 @@
 
 
 object generateImpHornClauses {
-  
-  def main(args: Array[String]): Unit = {
+
+  def generateHornClauses(originalStmt: Stmt, controlflow: Array[Tuple4[Int,Int,String,Either[Stmt, BExp]]], printHorn: Boolean) : Array[String] = {
+    //generate z3 script
+    val z3Script = scala.collection.mutable.ListBuffer[String]();  
     
-  }
-  
-  def generateHornClauses(controlflow: Array[Tuple4[Int,Int,String,Either[Stmt, BExp]]]) : Array[String] = {
+    //get list of all variables
+    val varList = generateVariableList(originalStmt);
+    
     //generate z3 text for nodes
     val nodes = scala.collection.mutable.Map[Int, String]();
     for(node <- controlflow){
-      nodes(node._1) = "(declare-fun P"+node._1+" (Int) Bool)";
-      nodes(node._2) = "(declare-fun P"+node._2+" (Int) Bool)";
+      nodes(node._1) = "(declare-fun P"+node._1+" ("+varList.map(f => "Int").mkString(" ")+") Bool)";
+      nodes(node._2) = "(declare-fun P"+node._2+" ("+varList.map(f => "Int").mkString(" ")+") Bool)";
     }
     
-    //generate z3 asserts
-    val asserts = scala.collection.mutable.ListBuffer[String]();  
-    //generate inital start
+    z3Script ++= nodes.values;
+            
+    //generate initial start
+    val inital_assert_z3 = "(assert "+
+                           "(forall ("+varList.map(v => "( "+v+" Int)").mkString(" ")+") "+
+                           "(=> true (P"+nodes.keySet.reduceLeft(_ min _)+" "+varList.mkString(" ")+") )))";
+    val inital_assert_human = "true -> P"+nodes.keySet.reduceLeft(_ min _);
+    if(printHorn){
+      println(inital_assert_human);
+    }
+    z3Script += inital_assert_z3;
     
     //generate rest of asserts
+    for(edge <- controlflow){
+      val node_str = convertNodeToZ3Str(edge._4, edge._1, edge._2, varList);
+      if(printHorn){
+        println(node_str._2);
+      }
+      z3Script += node_str._1;
+    }
+    
+    return z3Script.toArray;
   }
   
-  def convertNodeToZ3Str(exp: Either[Stmt, BExp], from: Int, to: Int, varList: Array[String]) : Tuple2[String,String] = {
+  //generate set of unique variables from the statement
+  def generateVariableList(stmt: Stmt) : Set[String] = {
+    stmt match{
+        case s:Skip =>
+          return Set();
+        case as:Assign =>
+          return Set(as.id.name) ++ generateVariableList(as.from);
+        case se:Sequence =>
+          return generateVariableList(se.left)++generateVariableList(se.right);
+        case con:Conditional =>
+          return generateVariableList(con.bool) ++ generateVariableList(con.path_false) ++ generateVariableList(con.path_true);
+        case whi:WhileLoop =>
+          return generateVariableList(whi.bool) ++ generateVariableList(whi.body);
+        case asrt:Assert =>
+          return generateVariableList(asrt.check);
+    }
+  }
+  
+  def generateVariableList(bexp: BExp) : Set[String] = {
+    bexp match {
+      case le: LessEqual =>
+        return generateVariableList(le.a) ++ generateVariableList(le.b);
+      case eq: Equal =>
+        return generateVariableList(eq.a) ++ generateVariableList(eq.b);
+      case not: Not =>
+        return generateVariableList(not.a);
+      case and: And =>
+        return generateVariableList(and.a) ++ generateVariableList(and.b);
+      case or: Or =>
+        return generateVariableList(or.a) ++ generateVariableList(or.b);
+    }
+  }
+  
+  def generateVariableList(iexp: IExp) : Set[String] = {
+    iexp match {
+      case _:IdealInt => return Set();
+      case id:Id => return Set(id.name);
+      case add:Add => return generateVariableList(add.a) ++ generateVariableList(add.b);
+      case sub:Sub => return generateVariableList(sub.a) ++ generateVariableList(sub.b);
+    }
+  }
+  
+  
+  //Generate Z3 input from the control flow graph
+  def convertNodeToZ3Str(exp: Either[Stmt, BExp], from: Int, to: Int, varList: Set[String]) : Tuple2[String,String] = {
     val forall_inputs = varList.map(v => "( "+v+" Int)").mkString(" ");
     
     exp match{
@@ -36,7 +99,7 @@ object generateImpHornClauses {
         return Tuple2(z3_str, human_str);
       }
       case Left(as:Assign) => {
-        val assign_prime = as.id+"Prime";
+        val assign_prime = as.id.name+"Prime";
         val z3_str = "(assert "+
                      "(forall ("+forall_inputs+"("+assign_prime+" Int)) "+
                      "(=> "+
@@ -76,7 +139,7 @@ object generateImpHornClauses {
                        ")"+
                        "(P"+to+" "+varList.mkString(" ")+")"+
                      ")))";
-        val human_str = "P"+from+" ^ "+convertBExpZ3Str(bexp)+" -> P"+to;//TODO
+        val human_str = "P"+from+" ^ "+convertBExpZ3Str(bexp)+" -> P"+to;
         return Tuple2(z3_str, human_str);
       }
     }
@@ -94,10 +157,10 @@ object generateImpHornClauses {
   
    def convertIExpZ3Str(in: IExp) : String = {
       in match{
-        case ii: IdealInt => return "("+ii.value.toString+")";
-        case id: Id => return "("+id.name+")";
-        case add: Add => return "(+"+convertIExpZ3Str(add.a)+" "+convertIExpZ3Str(add.b)+")";
-        case sub: Sub => return "(+"+convertIExpZ3Str(sub.a)+" "+convertIExpZ3Str(sub.b)+")";
+        case ii: IdealInt => return ii.value.toString;
+        case id: Id => return id.name;
+        case add: Add => return "(+ "+convertIExpZ3Str(add.a)+" "+convertIExpZ3Str(add.b)+")";
+        case sub: Sub => return "(- "+convertIExpZ3Str(sub.a)+" "+convertIExpZ3Str(sub.b)+")";
       }
     }
   
