@@ -12,15 +12,15 @@ object generateImpHornClauses {
     //generate z3 text for nodes
     val nodes = scala.collection.mutable.Map[Int, String]();
     for(node <- controlflow){
-      nodes(node._1) = "(declare-fun P"+node._1+" ("+varList.map(f => "Int").mkString(" ")+") Bool)";
-      nodes(node._2) = "(declare-fun P"+node._2+" ("+varList.map(f => "Int").mkString(" ")+") Bool)";
+      nodes(node._1) = "(declare-fun P"+node._1+" ("+List.fill(varList.size)("Int").mkString(" ")+") Bool)";
+      nodes(node._2) = "(declare-fun P"+node._2+" ("+List.fill(varList.size)("Int").mkString(" ")+") Bool)";
     }
     
     z3Script ++= nodes.values;
             
     //generate initial start
     val inital_assert_z3 = "(assert "+
-                           "(forall ("+varList.map(v => "( "+v+" Int)").mkString(" ")+") "+
+                           "(forall ("+varList.map(v => "("+v+" Int)").mkString(" ")+") "+
                            "(=> true (P"+nodes.keySet.reduceLeft(_ min _)+" "+varList.mkString(" ")+") )))";
     val inital_assert_human = "true -> P"+nodes.keySet.reduceLeft(_ min _);
     if(printHorn){
@@ -85,11 +85,11 @@ object generateImpHornClauses {
   
   //Generate Z3 input from the control flow graph
   def convertNodeToZ3Str(exp: Either[Stmt, BExp], from: Int, to: Int, varList: Set[String]) : Tuple2[String,String] = {
-    val forall_inputs = varList.map(v => "( "+v+" Int)").mkString(" ");
+    val forall_inputs = varList.map(v => "("+v+" Int)").mkString(" ");
     
     exp match{
       case Left(_:Skip) => {
-        val z3_str = "(assert  "+
+        val z3_str = "(assert "+
                      "(forall ("+forall_inputs+") "+
                       "(=> "+
                         "(P"+from+" "+varList.mkString(" ")+")"+
@@ -101,7 +101,7 @@ object generateImpHornClauses {
       case Left(as:Assign) => {
         val assign_prime = as.id.name+"Prime";
         val z3_str = "(assert "+
-                     "(forall ("+forall_inputs+"("+assign_prime+" Int)) "+
+                     "(forall ("+forall_inputs+" ("+assign_prime+" Int)) "+
                      "(=> "+
                        "(and "+
                          "(P"+from+" "+varList.mkString(" ")+")"+
