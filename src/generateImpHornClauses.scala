@@ -105,9 +105,9 @@ object generateImpHornClauses {
                      "(=> "+
                        "(and "+
                          "(P"+from+" "+varList.mkString(" ")+")"+
-                         "(= "+assign_prime+" "+convertIExpZ3Str(as.from)+")"
+                         "(= "+assign_prime+" "+convertIExpZ3Str(as.from)+")"+
                        ")"+
-                       "(P"+to+" "+varList.filter(p => !p.equals(as.id)).mkString(" ")+" "+assign_prime+")"+
+                       "(P"+to+" "+varList.filter(p => !p.equals(as.id.name)).mkString(" ")+" "+assign_prime+")"+
                      ")))";
         val human_str = "P"+from+" ^ "+assign_prime+"="+convertIExpZ3Str(as.from)+" -> P"+to;
         return Tuple2(z3_str, human_str);
