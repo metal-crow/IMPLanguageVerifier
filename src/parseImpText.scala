@@ -19,7 +19,7 @@ object parseImpText {
       var i:Integer=0;
       while(i < input_lines.length){
         var line = input_lines(i);
-        println(line);
+        //println(line);
         
         //Skip
         if(line.toLowerCase().equals("skip")){
@@ -118,54 +118,60 @@ object parseImpText {
       return (Some(final_stmt), i);
     }
     
-    def parseBExp(bexp: String) : Option[BExp] = {
-      //check if <=, ==, AND, OR
-      val lessequal_i = bexp.indexOf("<=");
-      if(lessequal_i>=0){
-        val splitParse = helperIExpSplitParse(bexp, lessequal_i, 2);
-        if(splitParse.isEmpty){
-          return None;
-        }
-        return Some(LessEqual(splitParse.get._1, splitParse.get._2));
-      }
-      
-      val equal_i = bexp.indexOf("==");
-      if(equal_i>=0){
-        val splitParse = helperIExpSplitParse(bexp, equal_i, 2);
-        if(splitParse.isEmpty){
-          return None;
-        }
-        return Some(Equal(splitParse.get._1, splitParse.get._2));
-      }
-            
-      val and_i = bexp.indexOf("&&");
-      if(and_i>=0){
-        val splitParse = helperBExpSplitParse(bexp, and_i, 2);
-        if(splitParse.isEmpty){
-          return None;
-        }
-        return Some(And(splitParse.get._1, splitParse.get._2));
-      }
-      
-      val or_i = bexp.indexOf("||");      
-      if(or_i>=0){
-        val splitParse = helperBExpSplitParse(bexp, or_i, 2);
-        if(splitParse.isEmpty){
-          return None;
-        }
-        return Some(Or(splitParse.get._1, splitParse.get._2));
-      }
+    def parseBExp(bexp: String) : Option[BExp] = { 
+      //println("BEXP "+bexp);
       
       //check not
-      val not_i = bexp.indexOf("!");
-      if(not_i>=0){
-        val inner_str = bexp.substring(not_i);
+      if(bexp.startsWith("!")){
+        val inner_str = bexp.substring(1, bexp.length());
         val inner = parseBExp(inner_str);
         if(inner.isEmpty){
           println("Invalid not \""+inner_str+"\"");
           return None;
         }
         return Some(Not(inner.get));
+      }
+      
+      //split on <=, ==, AND, OR but preserve delimeter
+      val splitbexp = bexp.split("(?<=<=)|(?=<=)|(?<===)|(?===)|(?<=&&)|(?=&&)|(?<=\\|\\|)|(?=\\|\\|)");
+      val i = splitbexp.length/2;
+      
+      val left_str = splitbexp.slice(0, i).mkString("");
+      val right_str = splitbexp.slice(i+1, splitbexp.length).mkString("");
+      
+      splitbexp(i) match{
+        case "<=" => {
+          val left = parseIExp(left_str);
+          val right = parseIExp(right_str);
+          if(left.isDefined && right.isDefined){
+            return Some(LessEqual(left.get, right.get));
+          }
+        }
+        case "==" => {
+          val left = parseIExp(left_str);
+          val right = parseIExp(right_str);
+          if(left.isDefined && right.isDefined){
+            return Some(Equal(left.get, right.get));
+          }
+        }
+        case "&&" => {
+          val left = parseBExp(left_str);
+          val right = parseBExp(right_str);
+          if(left.isDefined && right.isDefined){
+            return Some(And(left.get, right.get));
+          }
+        }
+        case "||" => {
+          val left = parseBExp(left_str);
+          val right = parseBExp(right_str);
+          if(left.isDefined && right.isDefined){
+            return Some(Or(left.get, right.get));
+          }
+        }
+        case _ => {
+          println("ERROR :"+splitbexp(i));
+          return None;
+        }
       }      
             
       println("Unable to parse BExp \""+bexp+"\"");
@@ -173,6 +179,8 @@ object parseImpText {
     }
     
     def parseIExp(iexp: String) : Option[IExp] = {
+      //println("IEXP "+iexp);
+      
       //check if int
       if(iexp.matches("^\\d+$")){
         return Some(IdealInt(BigInt(iexp)));
@@ -181,60 +189,36 @@ object parseImpText {
       if(iexp.matches(valid_id_regex)){
         return Some(Id(iexp));
       }
-      //check if addition or subtraction (this innatly preserves left to right eval)
-      val plus_i = iexp.indexOf("+");
-      if(plus_i>=0){
-        val splitParse = helperIExpSplitParse(iexp, plus_i, 1);
-        if(splitParse.isEmpty){
-          return None;
-        }
-        return Some(Add(splitParse.get._1, splitParse.get._2));
-      }
       
-      val minus_i = iexp.indexOf("-");
-      if(minus_i>=0){
-        val splitParse = helperIExpSplitParse(iexp, minus_i, 1);
-        if(splitParse.isEmpty){
+      //split on +, - but preserve delimeter
+      val splitiexp = iexp.split("(?<=\\+)|(?=\\+)|(?<=-)|(?=-)");
+      val i = splitiexp.length/2;
+      
+      val left_str = splitiexp.slice(0, i).mkString("");
+      val right_str = splitiexp.slice(i+1, splitiexp.length).mkString("");
+
+      splitiexp(i) match{
+        case "+" => {
+          val left = parseIExp(left_str);
+          val right = parseIExp(splitiexp.slice(i+1, splitiexp.length).mkString(""));
+          if(left.isDefined && right.isDefined){
+            return Some(Add(left.get, right.get));
+          }
+        }
+        case "-" => {
+          val left = parseIExp(left_str);
+          val right = parseIExp(right_str);
+          if(left.isDefined && right.isDefined){
+            return Some(Sub(left.get, right.get));
+          }
+        }
+        case _ => {
+          println("ERROR :"+splitiexp(i));
           return None;
         }
-        return Some(Sub(splitParse.get._1, splitParse.get._2));
       }
       
       println("Unable to parse IExp \""+iexp);
       return None;
-    }
-    
-    def helperIExpSplitParse(str: String, split: Int, splitlen: Int) : Option[Tuple2[IExp, IExp]] = {
-        val left = str.substring(0, split);
-        val left_iexp = parseIExp(left);
-        if(left_iexp.isEmpty){
-            println("IExp \""+left+"\" is an invalid expression");
-            return None;
-        }
-        val right = str.substring(split+splitlen, str.length());
-        val right_iexp = parseIExp(right);
-        if(right_iexp.isEmpty){
-            println("IExp \""+right+"\" is an invalid expression");
-            return None;
-        }
-        
-        return Some(left_iexp.get, right_iexp.get);
-    }
-    
-    def helperBExpSplitParse(str: String, split: Int, splitlen: Int) : Option[Tuple2[BExp, BExp]] = {
-        val left = str.substring(0, split);
-        val left_bexp = parseBExp(left);
-        if(left_bexp.isEmpty){
-            println("BExp \""+left+"\" is an invalid expression");
-            return None;
-        }
-        val right = str.substring(split+splitlen, str.length());
-        val right_bexp = parseBExp(right);
-        if(right_bexp.isEmpty){
-            println("BExp \""+right+"\" is an invalid expression");
-            return None;
-        }
-        
-        return Some(left_bexp.get, right_bexp.get);
     }
 }
