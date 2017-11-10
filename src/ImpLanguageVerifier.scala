@@ -21,7 +21,7 @@ case class Id(name: String) extends IExp
 case class Add(a: IExp, b: IExp) extends IExp
 case class Sub(a: IExp, b: IExp) extends IExp
 
-object Main {
+object ImpLanguageVerifier {
     
     def main(args: Array[String]): Unit = {
        if (args.length == 0) {
