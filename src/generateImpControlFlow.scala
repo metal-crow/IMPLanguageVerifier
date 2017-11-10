@@ -2,7 +2,7 @@ import graphviz._
 import graphviz.graphio._
 
 object generateImpControlFlow {
-      def generateVisualGraph(controlflow: Array[Tuple4[Int,Int,String,Either[Stmt, BExp]]]) = {
+      def generateVisualGraph(controlflow: Array[Tuple4[Int,Int,String,Tuple2[Either[Stmt, BExp], Boolean]]]) = {
       var edges_graph = Seq[EdgeStatement]();
       for(edge <- controlflow){
         edges_graph = edges_graph :+ EdgeStatement(edge._1.toString, edge._2.toString, Seq[Attribute]("label" := "\""+edge._3+"\"")); 
@@ -12,12 +12,12 @@ object generateImpControlFlow {
     }
     
     //return array of tuples representing edges, and the label for each edge
-    def generateControlFlow(start_stmt: Stmt, startnode: Int, endnode: Int) : Array[Tuple4[Int,Int,String,Either[Stmt, BExp]]] = {
+    def generateControlFlow(start_stmt: Stmt, startnode: Int, endnode: Int) : Array[Tuple4[Int,Int,String,Tuple2[Either[Stmt, BExp], Boolean]]] = {
       start_stmt match{
         case s:Skip =>
-          return Array((startnode, endnode, "", Left(s)));
+          return Array((startnode, endnode, "", (Left(s), false)));
         case as:Assign =>
-          return Array((startnode, endnode, as.id.name+":="+resolveIExp(as.from), Left(as)));
+          return Array((startnode, endnode, as.id.name+":="+resolveIExp(as.from), (Left(as), false)));
         case se:Sequence =>
           val middle = nextNodeId();
           val ary = generateControlFlow(se.left, startnode, middle);
@@ -28,14 +28,14 @@ object generateImpControlFlow {
           val right = nextNodeId();
           val ary_true = generateControlFlow(con.path_true, left, endnode);
           val ary_false = generateControlFlow(con.path_false, right, endnode);
-          return Array( (startnode, left, resolveBExp(con.bool), Right(con.bool)), (startnode, right, "!"+resolveBExp(con.bool), Right(Not(con.bool))) ) ++ ary_true ++ ary_false;
+          return Array( (startnode, left, resolveBExp(con.bool), (Right(con.bool), false)), (startnode, right, "!"+resolveBExp(con.bool), (Right(Not(con.bool)), false)) ) ++ ary_true ++ ary_false;
         case whi:WhileLoop =>
           val start_body = nextNodeId();
           val body_edges = generateControlFlow(whi.body, start_body, startnode);
-          return Array( (startnode, start_body, resolveBExp(whi.bool), Right(whi.bool)), (startnode, endnode, "!"+resolveBExp(whi.bool), Right(Not(whi.bool))) ) ++ body_edges;
+          return Array( (startnode, start_body, resolveBExp(whi.bool), (Right(whi.bool), false)), (startnode, endnode, "!"+resolveBExp(whi.bool), (Right(Not(whi.bool)), false)) ) ++ body_edges;
         case asrt:Assert =>
           val bad_boy = nextNodeId();
-          return Array( (startnode, endnode, resolveBExp(asrt.check), Right(asrt.check)), (startnode, bad_boy, "!"+resolveBExp(asrt.check), Right(Not(asrt.check))) );
+          return Array( (startnode, endnode, resolveBExp(asrt.check), (Left(asrt), false)), (startnode, bad_boy, "!"+resolveBExp(asrt.check), (Left(asrt), true)) );
       }
     }
     

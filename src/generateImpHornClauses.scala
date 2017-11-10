@@ -2,7 +2,7 @@
 
 object generateImpHornClauses {
 
-  def generateHornClauses(originalStmt: Stmt, controlflow: Array[Tuple4[Int,Int,String,Either[Stmt, BExp]]], printHorn: Boolean) : Array[String] = {
+  def generateHornClauses(originalStmt: Stmt, controlflow: Array[Tuple4[Int,Int,String,Tuple2[Either[Stmt, BExp], Boolean]]], printHorn: Boolean) : Array[String] = {
     //generate z3 script
     val z3Script = scala.collection.mutable.ListBuffer[String]();  
     
@@ -84,11 +84,11 @@ object generateImpHornClauses {
   
   
   //Generate Z3 input from the control flow graph
-  def convertNodeToZ3Str(exp: Either[Stmt, BExp], from: Int, to: Int, varList: Set[String]) : Tuple2[String,String] = {
+  def convertNodeToZ3Str(exp: Tuple2[Either[Stmt, BExp], Boolean], from: Int, to: Int, varList: Set[String]) : Tuple2[String,String] = {
     val forall_inputs = varList.map(v => "("+v+" Int)").mkString(" ");
     
     exp match{
-      case Left(_:Skip) => {
+      case Tuple2(Left(_:Skip),_) => {
         val z3_str = "(assert "+
                      "(forall ("+forall_inputs+") "+
                       "(=> "+
@@ -98,7 +98,7 @@ object generateImpHornClauses {
         val human_str = "P"+from+" -> P"+to;
         return Tuple2(z3_str, human_str);
       }
-      case Left(as:Assign) => {
+      case Tuple2(Left(as:Assign),_) => {
         val assign_prime = as.id.name+"Prime";
         val z3_str = "(assert "+
                      "(forall ("+forall_inputs+" ("+assign_prime+" Int)) "+
@@ -112,11 +112,11 @@ object generateImpHornClauses {
         val human_str = "P"+from+" ^ "+assign_prime+"="+convertIExpZ3Str(as.from)+" -> P"+to;
         return Tuple2(z3_str, human_str);
       }
-      case Left(_:Conditional) | Left(_:Sequence) | Left(_:WhileLoop) => {
+      case Tuple2(Left(_:Conditional),_) | Tuple2(Left(_:Sequence),_) | Tuple2(Left(_:WhileLoop),_) => {
         println("Error: Conditional/Sequence/Loop is not allowed in control flow graph");
         return Tuple2("","");
       }
-      case Left(asrt:Assert) => {
+      case Tuple2(Left(asrt:Assert),true) => {
         val z3_str = "(assert "+
                      "(forall ("+forall_inputs+") "+
                      "(=> "+
@@ -129,7 +129,20 @@ object generateImpHornClauses {
         val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> P"+to;
         return Tuple2(z3_str, human_str);
       }
-      case Right(bexp) => {
+      case Tuple2(Left(asrt:Assert),false) => {
+        val z3_str = "(assert "+
+                     "(forall ("+forall_inputs+") "+
+                     "(=> "+
+                       "(and "+
+                         "(P"+from+" "+varList.mkString(" ")+")"+
+                         convertBExpZ3Str(asrt.check)+
+                       ")"+
+                       "(P"+to+" "+varList.mkString(" ")+")"+
+                     ")))";
+        val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> P"+to;
+        return Tuple2(z3_str, human_str);
+      }
+      case Tuple2(Right(bexp),_) => {
         val z3_str = "(assert "+
                      "(forall ("+forall_inputs+") "+
                      "(=> "+
