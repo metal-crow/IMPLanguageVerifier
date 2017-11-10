@@ -126,7 +126,7 @@ object generateImpHornClauses {
                        ")"+
                        "false"+
                      ")))";
-        val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> P"+to;
+        val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> false";
         return Tuple2(z3_str, human_str);
       }
       case Tuple2(Left(asrt:Assert),false) => {
@@ -139,7 +139,7 @@ object generateImpHornClauses {
                        ")"+
                        "(P"+to+" "+varList.mkString(" ")+")"+
                      ")))";
-        val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> P"+to;
+        val human_str = "P"+from+" ^ "+convertBExpZ3Str(asrt.check)+" -> P"+to;
         return Tuple2(z3_str, human_str);
       }
       case Tuple2(Right(bexp),_) => {
