@@ -107,7 +107,7 @@ object generateImpHornClauses {
                          "(P"+from+" "+varList.mkString(" ")+")"+
                          "(= "+assign_prime+" "+convertIExpZ3Str(as.from)+")"+
                        ")"+
-                       "(P"+to+" "+varList.filter(p => !p.equals(as.id.name)).mkString(" ")+" "+assign_prime+")"+
+                       "(P"+to+" "+varList.map(p => if(p.equals(as.id.name)) assign_prime else p).mkString(" ")+")"+
                      ")))";
         val human_str = "P"+from+" ^ "+assign_prime+"="+convertIExpZ3Str(as.from)+" -> P"+to;
         return Tuple2(z3_str, human_str);
@@ -123,7 +123,7 @@ object generateImpHornClauses {
                        "(and "+
                          "(P"+from+" "+varList.mkString(" ")+")"+
                          convertBExpZ3Str(Not(asrt.check))+
-                       ")"+
+                       ") "+
                        "false"+
                      ")))";
         val human_str = "P"+from+" ^ "+convertBExpZ3Str(Not(asrt.check))+" -> false";
