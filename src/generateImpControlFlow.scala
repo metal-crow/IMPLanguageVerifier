@@ -7,8 +7,9 @@ object generateImpControlFlow {
       for(edge <- controlflow){
         edges_graph = edges_graph :+ EdgeStatement(edge._1.toString, edge._2.toString, Seq[Attribute]("label" := "\""+edge._3+"\"")); 
       }
-      val graph = createGraph("tmp", edges_graph);
-      saveGraph("tmp2.dot", "tmp2.png", graph);
+      val graph = createGraph("CFGraph", edges_graph);
+      println("Generate control flow graph can be found at \"CFGraph.png\"");
+      saveGraph("CFGraph.dot", "CFGraph.png", graph);
     }
     
     //return array of tuples representing edges, and the label for each edge
