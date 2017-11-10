@@ -25,7 +25,7 @@ object ImpLanguageVerifier {
     
     def main(args: Array[String]): Unit = {
        if (args.length == 0) {
-        println("Incorrect usage. Call using \"NAME [-c][-h] <sourcefile>.imp\"");
+        println("Incorrect usage. Call using \"ImpLanguageVerifier [-c][-h] <sourcefile>.imp\"");
         return;
       }
       var filename = "";
