@@ -24,19 +24,20 @@ case class Sub(a: IExp, b: IExp) extends IExp
 object Main {
     
     def main(args: Array[String]): Unit = {
-      val prog = Sequence(Sequence(
-          Assign(Id("XINT"), IdealInt(15)),
-          Assign(Id("YINT"), IdealInt(0))),
-          WhileLoop(LessEqual(IdealInt(1), Id("XINT")), 
-              Sequence(
-                Conditional(Equal(Id("XINT"), IdealInt(5)), Assign(Id("YINT"), IdealInt(1)), Skip()),
-                Assign(Id("XINT"), Sub(Id("XINT"), IdealInt(1)))
-              )
-          ));
-      //val parsed_prog = parseImpText.parseTextInput("input.imp");
-      //println(parsed_prog);
+      //read in Imp
+      val parsed_prog = parseImpText.parseTextInput("input.imp");
+      if(parsed_prog.isEmpty){
+        return;
+      }
+      val prog = parsed_prog.get;
+      println(prog);
+      
+      //Generate control flow graph
       val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
-      //generateImpControlFlow.generateVisualGraph(controlflow);
-      generateImpHornClauses.generateHornClauses(prog, controlflow, true);
+      generateImpControlFlow.generateVisualGraph(controlflow);
+      
+      //Generate and parse Horn Clauses
+      val z3HornClauses = generateImpHornClauses.generateHornClauses(prog, controlflow, true);
+      solveZ3HornClauses.z3Parse(z3HornClauses);
     }
 }
