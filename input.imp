@@ -1,0 +1,12 @@
+XINT := 15
+YINT := 0
+assert(XINT == 15 && YINT == 0)
+while ( 1 <= XINT )
+    if ( XINT == 5 )
+        YINT := 1
+    else
+        skip
+    endif
+    XINT := XINT - 1
+endwhile
+assert(XINT == 0 && YINT == 1)
