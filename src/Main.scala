@@ -1,4 +1,4 @@
-
+import java.nio.file.{Paths, Files}
 
 sealed trait Stmt
 case class Skip() extends Stmt
@@ -24,20 +24,50 @@ case class Sub(a: IExp, b: IExp) extends IExp
 object Main {
     
     def main(args: Array[String]): Unit = {
+       if (args.length == 0) {
+        println("Incorrect usage. Call using \"NAME [-c][-h] <sourcefile>.imp\"");
+        return;
+      }
+      var filename = "";
+      var generateControlFlowGraphDiagram = false;
+      var printHornClauses = false;
+      
+      for(arg <- args){
+        if(arg.equals("-c")){
+          generateControlFlowGraphDiagram = true;
+        }
+        if(arg.equals("-h")){
+          printHornClauses=true;
+        }
+        if(arg.endsWith(".imp")){
+          //check filename
+          if(Files.exists(Paths.get(arg))){
+            filename = arg;
+          }
+        }
+      }
+      
+      if(filename.equals("")){
+        println("No filename supplied");
+        return;
+      }
+      
       //read in Imp
       val parsed_prog = parseImpText.parseTextInput("input.imp");
       if(parsed_prog.isEmpty){
         return;
       }
       val prog = parsed_prog.get;
-      println(prog);
+      //println(prog);
       
       //Generate control flow graph
       val controlflow = generateImpControlFlow.generateControlFlow(prog, generateImpControlFlow.nextNodeId(), generateImpControlFlow.nextNodeId());
-      generateImpControlFlow.generateVisualGraph(controlflow);
+      if(generateControlFlowGraphDiagram){
+        generateImpControlFlow.generateVisualGraph(controlflow);
+      }
       
       //Generate and parse Horn Clauses
-      val z3HornClauses = generateImpHornClauses.generateHornClauses(prog, controlflow, true);
+      val z3HornClauses = generateImpHornClauses.generateHornClauses(prog, controlflow, printHornClauses);
       solveZ3HornClauses.z3Parse(z3HornClauses);
     }
 }
