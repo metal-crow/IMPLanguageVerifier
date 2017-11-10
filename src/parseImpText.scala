@@ -86,7 +86,7 @@ object parseImpText {
           i += 1;
 
           val body_restuple = parseTextInputLines(input_lines.slice(i, input_lines.length));
-          i = body_restuple._2;
+          i += body_restuple._2;
           val body =  body_restuple._1
           if(body.isEmpty){
             return (None, i);
