@@ -53,7 +53,7 @@ object ImpLanguageVerifier {
       }
       
       //read in Imp
-      val parsed_prog = parseImpText.parseTextInput("input.imp");
+      val parsed_prog = parseImpText.parseTextInput(filename);
       if(parsed_prog.isEmpty){
         return;
       }
